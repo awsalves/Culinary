@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Gerencie suas receitas culinárias com facilidade, timer integrado e modo escuro.">
+    <meta name="theme-color" content="#FF6B6B">
+    <title>Culinary • Livro de Receitas Inteligente</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+
+    <style>
+        /* --- 1. DESIGN SYSTEM & CORE --- */
+        :root {
+            --primary: #FF6B6B;
+            --primary-dark: #EE5253;
+            --primary-gradient: linear-gradient(135deg, #FF6B6B, #FF9F43);
+            --bg-body: #F7F9FC;
+            --bg-card: #FFFFFF;
+            --bg-input: #F1F2F6;
+            --text-main: #2F3542;
+            --text-muted: #747D8C;
+            --border: 1px solid rgba(0,0,0,0.08);
+            --radius-md: 12px;
+            --radius-lg: 24px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+            --focus-ring: 0 0 0 3px rgba(255, 107, 107, 0.4);
+            --font-main: 'Outfit', sans-serif;
+            --font-serif: 'Playfair Display', serif;
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #121212;
+            --bg-card: #1E1E1E;
+            --bg-input: #2D2D2D;
+            --text-main: #E1E1E6;
+            --text-muted: #A8A8B3;
+            --border: 1px solid rgba(255,255,255,0.1);
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.3);
+            --shadow-md: 0 8px 24px rgba(0,0,0,0.5);
+        }
+
+        /* Reset Moderno */
+        *, *::before, *::after { box-sizing: border-box; }
+        
+        body {
+            margin: 0;
+            font-family: var(--font-main);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.5;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Acessibilidade: Foco visível */
+        :focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+        .sr-only {
+            position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+            overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
+        }
+
+        /* --- 2. LAYOUT & COMPONENTES --- */
+        
+        /* Header Semântico */
+        .app-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 1.5rem; background: var(--bg-card);
+            border-bottom: var(--border); position: sticky; top: 0; z-index: 100;
+        }
+        .brand { 
+            font-family: var(--font-serif); font-size: 1.5rem; font-weight: 700;
+            background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .icon-btn {
+            background: transparent; border: 1px solid transparent; cursor: pointer;
+            width: 40px; height: 40px; border-radius: 50%;
+            color: var(--text-main); transition: background 0.2s;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .icon-btn:hover { background: var(--bg-input); }
+
+        /* Controles e Filtros */
+        .controls { max-width: 1200px; margin: 1.5rem auto; padding: 0 1.5rem; }
+        
+        .search-wrapper { position: relative; margin-bottom: 1rem; }
+        .search-input {
+            width: 100%; padding: 1rem 1rem 1rem 3rem;
+            border-radius: var(--radius-lg); border: var(--border);
+            background: var(--bg-card); color: var(--text-main);
+            font-family: inherit; font-size: 1rem;
+        }
+        .search-icon { 
+            position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); 
+            color: var(--text-muted); pointer-events: none;
+        }
+
+        .filter-nav {
+            display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem;
+            scrollbar-width: none;
+        }
+        .filter-chip {
+            padding: 0.5rem 1.2rem; border-radius: 50px; border: var(--border);
+            background: var(--bg-card); color: var(--text-muted);
+            font-weight: 500; cursor: pointer; white-space: nowrap; transition: 0.2s;
+        }
+        .filter-chip[aria-pressed="true"] {
+            background: var(--primary); color: white; border-color: var(--primary);
+        }
+
+        /* Grid Otimizado (CSS Grid) */
+        .recipe-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem; padding: 0 1.5rem 6rem; max-width: 1200px; margin: 0 auto;
+            content-visibility: auto; /* Otimização de renderização */
+        }
+
+        /* Card Semântico */
+        .card {
+            background: var(--bg-card); border-radius: var(--radius-md);
+            border: var(--border); overflow: hidden; position: relative;
+            box-shadow: var(--shadow-sm); transition: transform 0.2s, box-shadow 0.2s;
+            display: flex; flex-direction: column;
+        }
+        .card:hover, .card:focus-within { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+
+        .card-img-container {
+            width: 100%; aspect-ratio: 16/9; /* Previne Layout Shift (CLS) */
+            background: var(--bg-input); position: relative;
+        }
+        .card-img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: opacity 0.3s;
+        }
+
+        .card-content { padding: 1.2rem; flex: 1; display: flex; flex-direction: column; }
+        .card-meta { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+        .card-title { margin: 0; font-size: 1.25rem; font-family: var(--font-serif); }
+        
+        /* Botão Favorito Acessível */
+        .btn-fav {
+            position: absolute; top: 0.75rem; right: 0.75rem;
+            width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(255,255,255,0.9); border: none;
+            display: grid; place-items: center; cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 1.1rem; color: #ccc;
+        }
+        .btn-fav[aria-pressed="true"] { color: #FF4757; }
+
+        /* FAB (Floating Action Button) */
+        .fab {
+            position: fixed; bottom: 2rem; right: 2rem;
+            width: 3.5rem; height: 3.5rem; border-radius: 50%;
+            background: var(--primary-gradient); color: white;
+            border: none; box-shadow: var(--shadow-md);
+            font-size: 1.5rem; cursor: pointer; display: grid; place-items: center;
+            transition: transform 0.2s; z-index: 50;
+        }
+        .fab:hover { transform: scale(1.1); }
+
+        /* --- 3. MODAIS NATIVOS (<dialog>) --- */
+        dialog {
+            border: none; border-radius: var(--radius-lg);
+            background: var(--bg-card); color: var(--text-main);
+            max-width: 650px; width: 90%; padding: 0;
+            box-shadow: var(--shadow-md);
+            margin: auto; /* Centraliza nativamente */
+        }
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+        }
+        /* Animação de entrada */
+        dialog[open] { animation: fade-in 0.3s ease-out; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .dialog-header {
+            padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: var(--border);
+        }
+        .dialog-body { padding: 1.5rem; overflow-y: auto; max-height: 70vh; }
+        
+        /* Form Styles */
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; margin-bottom: 0.4rem; font-weight: 500; font-size: 0.9rem; }
+        .form-control {
+            width: 100%; padding: 0.8rem; border-radius: var(--radius-md);
+            border: var(--border); background: var(--bg-input);
+            color: var(--text-main); font-family: inherit;
+        }
+        .btn-primary {
+            width: 100%; padding: 1rem; border: none; border-radius: var(--radius-md);
+            background: var(--primary); color: white; font-weight: 700; cursor: pointer;
+        }
+
+        /* Timer Widget dentro do Modal */
+        .timer-widget {
+            background: var(--bg-input); padding: 1rem; border-radius: var(--radius-md);
+            display: flex; align-items: center; justify-content: space-between; margin: 1rem 0;
+        }
+        .timer-display { font-family: monospace; font-size: 1.5rem; font-weight: 700; }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+            background: #333; color: white; padding: 0.8rem 1.5rem;
+            border-radius: 50px; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s; z-index: 200;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast[data-type="error"] { background: #FF4757; }
+
+        .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); display: none; }
+    </style>
+    
+    <script>
+        (function() {
+            const saved = localStorage.getItem('chef_theme');
+            const system = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const themeRoot = document.documentElement;
+            if (saved === 'dark' || (!saved && system)) {
+                themeRoot.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="brand">Culinary.</div>
+        <nav aria-label="Ferramentas">
+            <button class="icon-btn" id="themeToggle" aria-label="Alternar tema escuro">
+                <i class="fas fa-moon" aria-hidden="true"></i>
+            </button>
+            <button class="icon-btn" onclick="app.exportData()" aria-label="Exportar Backup">
+                <i class="fas fa-download" aria-hidden="true"></i>
+            </button>
+            <label class="icon-btn" aria-label="Importar Backup">
+                <i class="fas fa-upload" aria-hidden="true"></i>
+                <input type="file" id="importInput" hidden accept=".json">
+            </label>
+        </nav>
+    </header>
+
+    <main>
+        <section class="controls" aria-label="Filtros e Busca">
+            <div class="search-wrapper">
+                <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                <input type="search" id="searchInput" class="search-input" placeholder="O que vamos cozinhar hoje?">
+            </div>
+            
+            <div class="filter-nav" role="tablist" id="filterContainer">
+                </div>
+        </section>
+
+        <section class="recipe-grid" id="recipeGrid" aria-live="polite">
+            </section>
+
+        <div id="emptyState" class="empty-state">
+            <p>Nenhuma receita encontrada.</p>
+        </div>
+    </main>
+
+    <button class="fab" onclick="modalManager.openForm()" aria-label="Adicionar nova receita">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+    </button>
+
+    <dialog id="viewDialog">
+        <div class="dialog-header">
+            <h2 id="viewTitle" style="margin:0; font-family:var(--font-serif)"></h2>
+            <button class="icon-btn" onclick="modalManager.close('view')" aria-label="Fechar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="dialog-body">
+            <img id="viewImg" src="" alt="" style="width:100%; height:200px; object-fit:cover; border-radius:8px; margin-bottom:1rem; background:var(--bg-input)">
+            
+            <div class="timer-widget">
+                <div>
+                    <span style="display:block; font-size:0.75rem; text-transform:uppercase; color:var(--text-muted)">Timer</span>
+                    <span id="timerDisplay" class="timer-display">00:00</span>
+                </div>
+                <div style="gap:5px; display:flex">
+                    <button onclick="timer.add(1)" class="icon-btn" style="border:1px solid var(--border)">+1</button>
+                    <button onclick="timer.reset()" class="icon-btn" style="color:var(--primary-dark); border:1px solid var(--border)"><i class="fas fa-undo"></i></button>
+                </div>
+            </div>
+
+            <h3>Ingredientes</h3>
+            <ul id="viewIng" style="padding-left:1.2rem; margin-bottom:1.5rem"></ul>
+
+            <h3>Modo de Preparo</h3>
+            <p id="viewInst" style="white-space: pre-line; line-height:1.6; color:var(--text-main)"></p>
+
+            <div style="margin-top:2rem; display:flex; gap:1rem">
+                <button id="btnEdit" class="btn-primary" style="background:#f39c12; flex:1">Editar</button>
+                <button id="btnDelete" class="btn-primary" style="background:#e74c3c; flex:1">Excluir</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="formDialog">
+        <div class="dialog-header">
+            <h2 id="formTitle" style="margin:0">Nova Receita</h2>
+            <button class="icon-btn" onclick="modalManager.close('form')" aria-label="Fechar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="dialog-body">
+            <form id="recipeForm">
+                <input type="hidden" name="id">
+                <div class="form-group">
+                    <label class="form-label" for="inpName">Nome da Receita</label>
+                    <input type="text" id="inpName" name="name" class="form-control" required>
+                </div>
+                <div style="display:flex; gap:1rem">
+                    <div class="form-group" style="flex:1">
+                        <label class="form-label" for="inpCat">Categoria</label>
+                        <select id="inpCat" name="cat" class="form-control">
+                            <option value="Salgado">🥘 Salgado</option>
+                            <option value="Doce">🍰 Doce</option>
+                            <option value="Saudável">🥗 Saudável</option>
+                            <option value="Bebida">🍹 Bebida</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label class="form-label" for="inpTime">Tempo</label>
+                        <input type="text" id="inpTime" name="time" class="form-control" placeholder="Ex: 30 min">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="inpImg">URL da Imagem</label>
+                    <input type="url" id="inpImg" name="img" class="form-control" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="inpIng">Ingredientes (um por linha)</label>
+                    <textarea id="inpIng" name="ing" class="form-control" rows="4" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="inpInst">Instruções</label>
+                    <textarea id="inpInst" name="inst" class="form-control" rows="5" required></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Salvar Receita</button>
+            </form>
+        </div>
+    </dialog>
+
+    <div id="toast" role="status" class="toast"></div>
+
+    <script>
+        /**
+         * UTILITÁRIOS
+         * Performance e Segurança
+         */
+        const utils = {
+            imgPlaceholder: `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="100%" height="100%" fill="#ddd"/></svg>')}`,
+
+            // Previne execução excessiva de funções (Otimização para busca)
+            debounce(func, wait) {
+                let timeout;
+                return function(...args) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(this, args), wait);
+                };
+            },
+            
+            // Cria elemento DOM de forma segura (Substituto ao innerHTML)
+            create(tag, className, text = '') {
+                const el = document.createElement(tag);
+                if (className) el.className = className;
+                if (text) el.textContent = text;
+                return el;
+            },
+
+            // Sanitização básica para URLs
+            safeUrl(url) {
+                try {
+                    const parsed = new URL(url);
+                    return ['http:', 'https:'].includes(parsed.protocol) ? url : '';
+                } catch { return ''; }
+            },
+
+            normalizeRecipe(raw = {}) {
+                const name = String(raw.name || '').trim();
+                const ingredients = String(raw.ing || '').trim();
+                const instructions = String(raw.instructions ?? raw.inst ?? '').trim();
+
+                if (!name || !ingredients || !instructions) return null;
+
+                return {
+                    id: String(raw.id || Date.now()),
+                    name,
+                    cat: ['Salgado', 'Doce', 'Saudável', 'Bebida'].includes(raw.cat) ? raw.cat : 'Salgado',
+                    time: String(raw.time || '').trim(),
+                    img: this.safeUrl(String(raw.img || '').trim()),
+                    ing: ingredients,
+                    instructions,
+                    fav: Boolean(raw.fav)
+                };
+            },
+
+            searchableRecipeText(recipe) {
+                return [recipe.name, recipe.cat, recipe.time, recipe.ing, recipe.instructions]
+                    .join(' ')
+                    .toLowerCase();
+            }
+        };
+
+        /**
+         * STATE MANAGEMENT
+         */
+        const state = {
+            recipes: [],
+            filter: 'all',
+            search: ''
+        };
+
+        /**
+         * DOM ELEMENTS
+         */
+        const els = {
+            grid: document.getElementById('recipeGrid'),
+            empty: document.getElementById('emptyState'),
+            search: document.getElementById('searchInput'),
+            filters: document.getElementById('filterContainer'),
+            viewDialog: document.getElementById('viewDialog'),
+            formDialog: document.getElementById('formDialog'),
+            form: document.getElementById('recipeForm'),
+            toast: document.getElementById('toast')
+        };
+
+        /**
+         * MODAL MANAGER
+         * Usa API nativa <dialog>
+         */
+        const modalManager = {
+            openForm(id = null) {
+                els.form.reset();
+                const title = document.getElementById('formTitle');
+                
+                if (id) {
+                    const r = state.recipes.find(item => item.id === id);
+                    if (!r) return;
+                    title.textContent = 'Editar Receita';
+                    els.form.id.value = r.id;
+                    els.form.name.value = r.name;
+                    els.form.cat.value = r.cat;
+                    els.form.time.value = r.time;
+                    els.form.img.value = r.img;
+                    els.form.ing.value = r.ing;
+                    els.form.inst.value = r.instructions;
+                } else {
+                    title.textContent = 'Nova Receita';
+                    els.form.id.value = '';
+                }
+                els.formDialog.showModal();
+            },
+            close(type) {
+                const dialog = document.getElementById(`${type}Dialog`);
+                dialog.close();
+                if (type === 'view') timer.reset();
+            }
+        };
+
+        /**
+         * APP CORE
+         */
+        const app = {
+            init() {
+                // Carregar dados
+                try {
+                    const stored = JSON.parse(localStorage.getItem('chef_recipes_v3')) || [];
+                    state.recipes = Array.isArray(stored)
+                        ? stored.map(recipe => utils.normalizeRecipe(recipe)).filter(Boolean)
+                        : [];
+                } catch { state.recipes = []; }
+
+                this.renderFilters();
+                this.renderGrid();
+                this.setupListeners();
+            },
+
+            persist() {
+                localStorage.setItem('chef_recipes_v3', JSON.stringify(state.recipes));
+            },
+
+            // Renderização SEGURA (sem innerHTML para dados do usuário)
+            renderGrid() {
+                els.grid.innerHTML = ''; // Limpa grid com segurança pois será repopulado com nós
+
+                const filtered = state.recipes.filter(r => {
+                    const matchesSearch = utils.searchableRecipeText(r).includes(state.search);
+                    const matchesFilter = state.filter === 'all' 
+                        ? true 
+                        : state.filter === 'fav' ? r.fav : r.cat === state.filter;
+                    return matchesSearch && matchesFilter;
+                });
+
+                if (filtered.length === 0) {
+                    els.empty.style.display = 'block';
+                } else {
+                    els.empty.style.display = 'none';
+                    
+                    // Fragmento de documento para performance (apenas 1 Reflow)
+                    const frag = document.createDocumentFragment();
+
+                    filtered.forEach(r => {
+                        const article = utils.create('article', 'card');
+                        
+                        // Imagem com Lazy Loading e Fallback
+                        const imgCont = utils.create('div', 'card-img-container');
+                        const img = document.createElement('img');
+                        img.className = 'card-img';
+                        img.src = r.img || utils.imgPlaceholder;
+                        img.alt = `Foto de ${r.name}`;
+                        img.loading = 'lazy'; // Performance nativa
+                        img.onerror = () => { img.src = utils.imgPlaceholder; };
+                        
+                        // Botão Favorito
+                        const favBtn = document.createElement('button');
+                        favBtn.className = 'btn-fav';
+                        favBtn.setAttribute('aria-label', r.fav ? 'Remover dos favoritos' : 'Adicionar aos favoritos');
+                        favBtn.setAttribute('aria-pressed', r.fav);
+                        favBtn.innerHTML = `<i class="${r.fav ? 'fas' : 'far'} fa-heart"></i>`;
+                        favBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            this.toggleFav(r.id);
+                        };
+
+                        imgCont.append(img, favBtn);
+
+                        // Conteúdo
+                        const content = utils.create('div', 'card-content');
+                        const meta = utils.create('div', 'card-meta');
+                        meta.append(
+                            utils.create('span', null, r.cat),
+                            utils.create('span', null, r.time)
+                        );
+                        
+                        const title = utils.create('h3', 'card-title', r.name);
+                        
+                        content.append(meta, title);
+                        article.append(imgCont, content);
+                        
+                        // Acessibilidade: Card clicável
+                        article.addEventListener('click', () => this.openView(r));
+                        article.addEventListener('keydown', (e) => {
+                            if(e.key === 'Enter') this.openView(r);
+                        });
+                        article.tabIndex = 0;
+
+                        frag.appendChild(article);
+                    });
+                    
+                    els.grid.appendChild(frag);
+                }
+            },
+
+            renderFilters() {
+                const cats = [
+                    {id: 'all', label: 'Tudo'},
+                    {id: 'fav', label: 'Favoritos'},
+                    {id: 'Salgado', label: 'Salgados'},
+                    {id: 'Doce', label: 'Doces'},
+                    {id: 'Saudável', label: 'Saudáveis'},
+                    {id: 'Bebida', label: 'Bebidas'}
+                ];
+
+                els.filters.innerHTML = '';
+                cats.forEach(c => {
+                    const btn = document.createElement('button');
+                    btn.className = 'filter-chip';
+                    btn.textContent = c.label;
+                    btn.setAttribute('role', 'tab');
+                    btn.setAttribute('aria-selected', state.filter === c.id);
+                    btn.setAttribute('aria-pressed', state.filter === c.id);
+                    
+                    btn.onclick = () => {
+                        state.filter = c.id;
+                        this.renderFilters(); // Atualiza estado visual dos botões
+                        this.renderGrid();
+                    };
+                    els.filters.appendChild(btn);
+                });
+            },
+
+            openView(r) {
+                document.getElementById('viewTitle').textContent = r.name;
+                document.getElementById('viewInst').textContent = r.instructions;
+                
+                const img = document.getElementById('viewImg');
+                img.src = r.img || utils.imgPlaceholder;
+                img.alt = `Foto do prato ${r.name}`;
+                img.onerror = () => { img.src = utils.imgPlaceholder; };
+
+                const list = document.getElementById('viewIng');
+                list.innerHTML = '';
+                r.ing.split('\n').forEach(line => {
+                    if(line.trim()) {
+                        const li = document.createElement('li');
+                        li.textContent = line;
+                        list.appendChild(li);
+                    }
+                });
+
+                // Setup actions
+                document.getElementById('btnEdit').onclick = () => {
+                    modalManager.close('view');
+                    modalManager.openForm(r.id);
+                };
+                
+                document.getElementById('btnDelete').onclick = () => {
+                    if(confirm('Excluir esta receita?')) {
+                        state.recipes = state.recipes.filter(item => item.id !== r.id);
+                        this.persist();
+                        this.renderGrid();
+                        modalManager.close('view');
+                        this.showToast('Receita excluída', 'error');
+                    }
+                };
+
+                els.viewDialog.showModal();
+            },
+
+            toggleFav(id) {
+                const r = state.recipes.find(item => item.id === id);
+                if (r) {
+                    r.fav = !r.fav;
+                    this.persist();
+                    this.renderGrid(); // Re-renderiza para atualizar ícone e estado
+                }
+            },
+
+            saveForm(e) {
+                e.preventDefault();
+                const formData = new FormData(els.form);
+                const data = Object.fromEntries(formData.entries());
+                const newRecipe = utils.normalizeRecipe({
+                    id: data.id || Date.now().toString(),
+                    name: data.name,
+                    cat: data.cat,
+                    time: data.time,
+                    img: data.img,
+                    ing: data.ing,
+                    instructions: data.inst,
+                    fav: false
+                });
+
+                if (!newRecipe) {
+                    this.showToast('Preencha nome, ingredientes e instruções.', 'error');
+                    return;
+                }
+
+                if (data.id) {
+                    const idx = state.recipes.findIndex(r => r.id === data.id);
+                    if (idx > -1) {
+                        newRecipe.fav = state.recipes[idx].fav; // Mantém fav
+                        state.recipes[idx] = newRecipe;
+                    }
+                } else {
+                    state.recipes.unshift(newRecipe);
+                }
+
+                this.persist();
+                this.renderGrid();
+                modalManager.close('form');
+                this.showToast('Receita salva com sucesso!');
+            },
+
+            showToast(msg, type = 'success') {
+                els.toast.textContent = msg;
+                els.toast.dataset.type = type;
+                els.toast.classList.add('show');
+                setTimeout(() => els.toast.classList.remove('show'), 3000);
+            },
+            
+            exportData() {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.recipes));
+                const node = document.createElement('a');
+                node.setAttribute("href", dataStr);
+                node.setAttribute("download", "receitas_backup.json");
+                document.body.appendChild(node);
+                node.click();
+                node.remove();
+            },
+
+            setupListeners() {
+                // Debounce na busca para performance
+                els.search.addEventListener('input', utils.debounce((e) => {
+                    state.search = e.target.value.toLowerCase();
+                    this.renderGrid();
+                }, 300));
+
+                els.form.addEventListener('submit', (e) => this.saveForm(e));
+                
+                // Import
+                document.getElementById('importInput').addEventListener('change', (e) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const json = JSON.parse(event.target.result);
+                            if(Array.isArray(json)) {
+                                const normalizedRecipes = json
+                                    .map(recipe => utils.normalizeRecipe(recipe))
+                                    .filter(Boolean);
+
+                                if (normalizedRecipes.length === 0) {
+                                    this.showToast('Nenhuma receita válida encontrada.', 'error');
+                                    return;
+                                }
+
+                                state.recipes = normalizedRecipes;
+                                this.persist();
+                                this.renderGrid();
+                                this.showToast(`Backup importado! (${normalizedRecipes.length} receitas)`);
+                            } else {
+                                this.showToast('Arquivo inválido.', 'error');
+                            }
+                        } catch { this.showToast('Erro no arquivo', 'error'); }
+                        finally { e.target.value = ''; }
+                    };
+                    if(e.target.files[0]) reader.readAsText(e.target.files[0]);
+                });
+
+                // Toggle Tema
+                document.getElementById('themeToggle').addEventListener('click', () => {
+                    const themeRoot = document.documentElement;
+                    const current = themeRoot.getAttribute('data-theme');
+                    const next = current === 'dark' ? 'light' : 'dark';
+                    themeRoot.setAttribute('data-theme', next);
+                    localStorage.setItem('chef_theme', next);
+                });
+            }
+        };
+
+        /**
+         * TIMER MODULE
+         */
+        const timer = {
+            seconds: 0,
+            interval: null,
+            el: document.getElementById('timerDisplay'),
+            add(min) {
+                this.stop();
+                this.seconds += min * 60;
+                this.update();
+                this.start();
+            },
+            start() {
+                if(this.interval) return;
+                this.interval = setInterval(() => {
+                    if(this.seconds <= 0) {
+                        this.stop();
+                        if(navigator.vibrate) navigator.vibrate(200);
+                        app.showToast('Tempo esgotado!');
+                        return;
+                    }
+                    this.seconds--;
+                    this.update();
+                }, 1000);
+            },
+            stop() {
+                clearInterval(this.interval);
+                this.interval = null;
+            },
+            reset() {
+                this.stop();
+                this.seconds = 0;
+                this.update();
+            },
+            update() {
+                const m = Math.floor(this.seconds / 60).toString().padStart(2, '0');
+                const s = (this.seconds % 60).toString().padStart(2, '0');
+                this.el.textContent = `${m}:${s}`;
+            }
+        };
+
+        // Iniciar
+        document.addEventListener('DOMContentLoaded', () => app.init());
+
+    </script>
+</body>
+</html>
