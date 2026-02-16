@@ -18,9 +18,9 @@ O projeto foi construído utilizando tecnologias web puras (Vanilla) para garant
 # 🚀 Como Executar o Projeto
 Como o projeto não utiliza frameworks ou bundlers (como React ou Webpack), a execução é extremamente simples:
    Clone o repositório:
-   ,,,
+   ```
    git clone https://github.com/seu-usuario/culinary.git
-   ,,,
+   ```
 
    Abra o arquivo:
    Basta abrir o arquivo index.html em qualquer navegador moderno.
